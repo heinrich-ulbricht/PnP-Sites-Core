@@ -377,6 +377,13 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.ObjectHandlers
             {
                 // The field Xml was found invalid
                 var tokenString = parser.GetLeftOverTokens(fieldXml).Aggregate(String.Empty, (acc, i) => acc + " " + i);
+                if (string.IsNullOrWhiteSpace(tokenString) && templateFieldElement.Attributes("Name").Count() > 0)
+                {
+                    // if a term cannot be found in the term store then tokenString is empty which produces an error message
+                    // that is not helpful; include field name in this case to give a hint
+                    tokenString = templateFieldElement.Attribute("Name").Value;
+                }
+
                 scope.LogError("The field was found invalid: {0}", tokenString);
                 throw new Exception($"The field was found invalid: {tokenString}");
             }
