@@ -11,13 +11,13 @@ using System.Threading.Tasks;
 using OfficeDevPnP.Core.Extensions;
 using OfficeDevPnP.Core.Framework.Provisioning.Providers.Xml.Resolvers.V201903;
 
-namespace OfficeDevPnP.Core.Framework.Provisioning.Providers.Xml.Serializers
+namespace OfficeDevPnP.Core.Framework.Provisioning.Providers.Xml.Serializers.V201903
 {
     /// <summary>
     /// Class to serialize/deserialize the Tenant-wide settings
     /// </summary>
     [TemplateSchemaSerializer(
-        MinimalSupportedSchemaVersion = XMLPnPSchemaVersion.V201801,
+        MinimalSupportedSchemaVersion = XMLPnPSchemaVersion.V201903,
         SerializationSequence = 300, DeserializationSequence = 300,
         Scope = SerializerScope.Provisioning)]
     internal class TenantSerializer : PnPBaseSchemaSerializer<ProvisioningTenant>
@@ -72,7 +72,7 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.Providers.Xml.Serializers
                 var tenantType = Type.GetType(tenantTypeName, false);
                 var siteDesignsTypeName = $"{PnPSerializationScope.Current?.BaseSchemaNamespace}.SiteDesignsSiteDesign, {PnPSerializationScope.Current?.BaseSchemaAssemblyName}";
                 var siteDesignsType = Type.GetType(siteDesignsTypeName, false);
-                var themeTypeName = $"{PnPSerializationScope.Current?.BaseSchemaNamespace}.ThemesTheme, {PnPSerializationScope.Current?.BaseSchemaAssemblyName}";
+                var themeTypeName = $"{PnPSerializationScope.Current?.BaseSchemaNamespace}.Theme, {PnPSerializationScope.Current?.BaseSchemaAssemblyName}";
                 var themeType = Type.GetType(themeTypeName, false);
 
                 if (tenantType != null)

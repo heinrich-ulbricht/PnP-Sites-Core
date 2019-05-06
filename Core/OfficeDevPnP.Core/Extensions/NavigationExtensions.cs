@@ -720,14 +720,18 @@ namespace Microsoft.SharePoint.Client
                 }
                 web.Context.ExecuteQueryRetry();
 #if !ONPREMISES
-            } else if  (navigationType == NavigationType.Footer)
+            }
+            else if (navigationType == NavigationType.Footer)
             {
                 var footerNavigation = web.LoadFooterNavigation();
-                for(var i = footerNavigation.Count - 1;i >= 0; i--)
+                if (footerNavigation != null)
                 {
-                    footerNavigation[i].DeleteObject();
+                    for (var i = footerNavigation.Count - 1; i >= 0; i--)
+                    {
+                        footerNavigation[i].DeleteObject();
+                    }
+                    web.Context.ExecuteQueryRetry();
                 }
-                web.Context.ExecuteQueryRetry();
 #endif
             }
         }
@@ -765,13 +769,28 @@ namespace Microsoft.SharePoint.Client
             var structureString = web.ExecuteGet($"/_api/navigation/MenuState?menuNodeKey='{Constants.SITEFOOTER_NODEKEY}'").GetAwaiter().GetResult();
             var menuState = JObject.Parse(structureString);
 
-            var nodes = menuState["nodes"] as JArray;
-            var topNode = web.Navigation.GetNodeById(Convert.ToInt32(menuState["StartingNodeKey"].Value<string>()));
-            web.Context.Load(topNode, n => n.Children.IncludeWithDefaultProperties());
-            web.Context.ExecuteQueryRetry();
-            var menuNode = topNode.Children.FirstOrDefault(n => n.Title == Constants.SITEFOOTER_MENUNODEKEY);
-            menuNode.EnsureProperty(n => n.Children.IncludeWithDefaultProperties());
-            return menuNode.Children;
+            if (menuState["StartingNodeKey"] == null)
+            {
+                var now = DateTime.Now.ToString("yyyy-MM-ddTHH:mm:ss:Z");
+                web.ExecutePost($"/_api/navigation/SaveMenuState", $@"{{ ""menuState"":{{ ""Version"":""{now}"",""StartingNodeTitle"":""3a94b35f-030b-468e-80e3-b75ee84ae0ad"",""SPSitePrefix"":""/"",""SPWebPrefix"":""{web.ServerRelativeUrl}"",""FriendlyUrlPrefix"":"""",""SimpleUrl"":"""",""Nodes"":[]}}}}").GetAwaiter().GetResult();
+                structureString = web.ExecuteGet($"/_api/navigation/MenuState?menuNodeKey='{Constants.SITEFOOTER_NODEKEY}'").GetAwaiter().GetResult();
+                menuState = JObject.Parse(structureString);
+            }
+
+            if (menuState["nodes"] != null)
+            {
+                var nodes = menuState["nodes"] as JArray;
+                var topNode = web.Navigation.GetNodeById(Convert.ToInt32(menuState["StartingNodeKey"].Value<string>()));
+                web.Context.Load(topNode, n => n.Children.IncludeWithDefaultProperties());
+                web.Context.ExecuteQueryRetry();
+                var menuNode = topNode.Children.FirstOrDefault(n => n.Title == Constants.SITEFOOTER_MENUNODEKEY);
+                menuNode.EnsureProperty(n => n.Children.IncludeWithDefaultProperties());
+                return menuNode.Children;
+            }
+            else
+            {
+                return null;
+            }
         }
 #endif
         #endregion

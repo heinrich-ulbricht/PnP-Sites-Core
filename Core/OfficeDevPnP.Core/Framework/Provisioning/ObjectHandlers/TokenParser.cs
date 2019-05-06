@@ -4,7 +4,6 @@ using Microsoft.SharePoint.Client.Taxonomy;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using OfficeDevPnP.Core.ALM;
-using OfficeDevPnP.Core.Framework.Graph;
 using OfficeDevPnP.Core.Framework.Provisioning.Connectors;
 using OfficeDevPnP.Core.Framework.Provisioning.Model;
 using OfficeDevPnP.Core.Framework.Provisioning.ObjectHandlers.TokenDefinitions;
@@ -16,6 +15,7 @@ using System.Globalization;
 using System.Linq;
 using System.Resources;
 using System.Text.RegularExpressions;
+using OfficeDevPnP.Core.Diagnostics;
 
 namespace OfficeDevPnP.Core.Framework.Provisioning.ObjectHandlers
 {
@@ -381,17 +381,24 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.ObjectHandlers
                 _tokens.Add(new GroupIdToken(web, "associatedownergroup", web.AssociatedOwnerGroup.Id.ToString()));
             }
 
-            var accessToken = PnPProvisioningContext.Current.AcquireToken("https://graph.microsoft.com/", "Group.Read.All");
-            if (accessToken != null)
+            if (PnPProvisioningContext.Current != null)
             {
-                // Get Office 365 Groups
-
-                var officeGroups = HttpHelper.MakeGetRequestForString("https://graph.microsoft.com/v1.0/groups?$filter=groupTypes/any(c:c+eq+'Unified')&$select=id,displayName", accessToken);
-                var returnObject = JObject.Parse(officeGroups);
-                var groupsArray = returnObject["value"].Value<JArray>();
-                foreach (var group in groupsArray)
+                var accessToken = PnPProvisioningContext.Current.AcquireToken("https://graph.microsoft.com/", "Group.Read.All");
+                if (accessToken != null)
                 {
-                    _tokens.Add(new GroupIdToken(web, group["displayName"].Value<string>(), group["id"].Value<string>()));
+                    // Get Office 365 Groups
+
+                    var officeGroups = HttpHelper.MakeGetRequestForString("https://graph.microsoft.com/v1.0/groups?$filter=groupTypes/any(c:c+eq+'Unified')&$select=id,displayName,mailNickname", accessToken);
+                    var returnObject = JObject.Parse(officeGroups);
+                    var groupsArray = returnObject["value"].Value<JArray>();
+                    foreach (var group in groupsArray)
+                    {
+                        _tokens.Add(new O365GroupIdToken(web, group["displayName"].Value<string>(), group["id"].Value<string>()));
+                        if (!group["displayName"].Value<string>().Equals(group["mailNickname"].Value<string>()))
+                        {
+                            _tokens.Add(new O365GroupIdToken(web, group["mailNickname"].Value<string>(), group["id"].Value<string>()));
+                        }
+                    }
                 }
             }
         }
@@ -436,40 +443,38 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.ObjectHandlers
                         }
                     }
                 }
-                // SiteCollection TermSets, only when we're not working in app-only
-                if (!web.Context.IsAppOnly())
-                {
-                    if (tokenIds.Contains("sitecollectiontermgroupid"))
-                        _tokens.Add(new SiteCollectionTermGroupIdToken(web));
-                    if (tokenIds.Contains("sitecollectiontermgroupname"))
-                        _tokens.Add(new SiteCollectionTermGroupNameToken(web));
 
-                    if (tokenIds.Contains("sitecollectiontermsetid"))
+                if (tokenIds.Contains("sitecollectiontermgroupid"))
+                    _tokens.Add(new SiteCollectionTermGroupIdToken(web));
+                if (tokenIds.Contains("sitecollectiontermgroupname"))
+                    _tokens.Add(new SiteCollectionTermGroupNameToken(web));
+
+                if (tokenIds.Contains("sitecollectiontermsetid"))
+                {
+                    var site = (web.Context as ClientContext).Site;
+                    var siteCollectionTermGroup = termStore.GetSiteCollectionGroup(site, true);
+                    web.Context.Load(siteCollectionTermGroup);
+                    try
                     {
-                        var site = (web.Context as ClientContext).Site;
-                        var siteCollectionTermGroup = termStore.GetSiteCollectionGroup(site, true);
-                        web.Context.Load(siteCollectionTermGroup);
-                        try
+                        web.Context.ExecuteQueryRetry();
+                        if (null != siteCollectionTermGroup && !siteCollectionTermGroup.ServerObjectIsNull.Value)
                         {
+                            web.Context.Load(siteCollectionTermGroup, group => group.TermSets.Include(ts => ts.Name, ts => ts.Id));
                             web.Context.ExecuteQueryRetry();
-                            if (null != siteCollectionTermGroup && !siteCollectionTermGroup.ServerObjectIsNull.Value)
+                            foreach (var termSet in siteCollectionTermGroup.TermSets)
                             {
-                                web.Context.Load(siteCollectionTermGroup, group => group.TermSets.Include(ts => ts.Name, ts => ts.Id));
-                                web.Context.ExecuteQueryRetry();
-                                foreach (var termSet in siteCollectionTermGroup.TermSets)
-                                {
-                                    _tokens.Add(new SiteCollectionTermSetIdToken(web, termSet.Name, termSet.Id));
-                                }
+                                _tokens.Add(new SiteCollectionTermSetIdToken(web, termSet.Name, termSet.Id));
                             }
                         }
-                        catch (ServerUnauthorizedAccessException)
-                        {
-                            // If we don't have permission to access the TermGroup, just skip it
-                        }
-                        catch (NullReferenceException)
-                        {
-                            // If there isn't a default TermGroup for the Site Collection, we skip the terms in token handler
-                        }
+                    }
+                    catch (ServerUnauthorizedAccessException)
+                    {
+                        // If we don't have permission to access the TermGroup, just skip it
+                        Log.Warning(Constants.LOGGING_SOURCE, CoreResources.TermGroup_No_Access);
+                    }
+                    catch (NullReferenceException)
+                    {
+                        // If there isn't a default TermGroup for the Site Collection, we skip the terms in token handler
                     }
                 }
             }
@@ -1009,6 +1014,13 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.ObjectHandlers
         private List<string> ParseTemplate(ProvisioningTemplate template)
         {
             List<string> tokenIds = new List<string>();
+
+            // Add parameter tokenid if parameters are specified
+            if (template.Parameters != null && template.Parameters.Any())
+            {
+                tokenIds.Add("parameter");
+            }
+
             var xml = template.ToXML();
 
             if (xml.IndexOfAny(TokenChars) == -1) return tokenIds;

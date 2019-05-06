@@ -1,5 +1,6 @@
 ﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Serialization;
+using OfficeDevPnP.Core.Framework.Provisioning.ObjectHandlers.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -16,6 +17,8 @@ namespace OfficeDevPnP.Core.Utilities
     /// </summary>
     public static class HttpHelper
     {
+        public const String JsonContentType = "application/json";
+
         /// <summary>
         /// Static readonly instance of HttpClient to improve performances
         /// </summary>
@@ -306,7 +309,8 @@ namespace OfficeDevPnP.Core.Utilities
                     : JsonConvert.SerializeObject(content, Formatting.None, new JsonSerializerSettings
                     {
                         NullValueHandling = NullValueHandling.Ignore,
-                        ContractResolver = new CamelCasePropertyNamesContractResolver(),
+                        ContractResolver = new ODataBindJsonResolver(),
+                        
                     });
                 requestContent = new StringContent(jsonString, Encoding.UTF8, contentType);
             }

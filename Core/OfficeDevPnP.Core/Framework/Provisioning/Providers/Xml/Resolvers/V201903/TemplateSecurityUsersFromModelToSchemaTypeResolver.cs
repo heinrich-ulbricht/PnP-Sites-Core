@@ -25,15 +25,16 @@ namespace OfficeDevPnP.Core.Framework.Provisioning.Providers.Xml.Resolvers
             this.collectionName = collectionName;
             this.clearItemsPropertyName = clearItemsPropertyName;
         }
+
         public object Resolve(object source, Dictionary<string, IResolver> resolvers = null, bool recursive = false)
         {
             Object result = null;
 
-            var security = (source as Model.SiteSecurity);
-            var userCollection = security?.GetPublicInstancePropertyValue(this.collectionName);
-            var clearItems = security?.GetPublicInstancePropertyValue(this.clearItemsPropertyName);
+            //source is either Security instance or SiteGroup instance
+            var userCollection = source?.GetPublicInstancePropertyValue(this.collectionName);
+            var clearItems = source?.GetPublicInstancePropertyValue(this.clearItemsPropertyName);
 
-            if (null != userCollection)
+            if (null != userCollection && (((ICollection)userCollection).Count > 0 || (Boolean)clearItems))
             {
                 var siteSecurityUsersCollectionTypeName = $"{PnPSerializationScope.Current?.BaseSchemaNamespace}.UsersList, {PnPSerializationScope.Current?.BaseSchemaAssemblyName}";
                 var siteSecurityUsersCollectionType = Type.GetType(siteSecurityUsersCollectionTypeName, true);
