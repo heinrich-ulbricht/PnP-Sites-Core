@@ -25,6 +25,7 @@ namespace OfficeDevPnP.Core.Tests.Framework.ProvisioningTemplates
                 TestCommon.DeleteFile(ctx, UrlUtility.Combine(ctx.Web.ServerRelativeUrl, "/SitePages/csp-test-1.aspx"));
                 TestCommon.DeleteFile(ctx, UrlUtility.Combine(ctx.Web.ServerRelativeUrl, "/SitePages/csp-test-2.aspx"));
                 TestCommon.DeleteFile(ctx, UrlUtility.Combine(ctx.Web.ServerRelativeUrl, "/SitePages/csp-test-3.aspx"));
+                TestCommon.DeleteFile(ctx, UrlUtility.Combine(ctx.Web.ServerRelativeUrl, "/SitePages/csp-test-author-byline.aspx"));
             }
         }
 
@@ -44,6 +45,26 @@ namespace OfficeDevPnP.Core.Tests.Framework.ProvisioningTemplates
                 });
             }
         }
+
+        [TestMethod]
+        public void ProvisionClientSidePagesWithHeader_EmptyAuthorByLine()
+        {
+            var resourceFolder = string.Format(@"{0}\Resources\Templates", AppDomain.CurrentDomain.BaseDirectory);
+            XMLTemplateProvider provider = new XMLFileSystemTemplateProvider(resourceFolder, "");
+
+            var existingTemplate = provider.GetTemplate("ClientSidePageWithHeader_EmptyAuthorByLine.xml");
+            using (var ctx = TestCommon.CreateClientContext())
+            {
+                ctx.Web.ApplyProvisioningTemplate(existingTemplate, new ProvisioningTemplateApplyingInformation()
+                {
+                    HandlersToProcess = Handlers.Pages
+                });
+                var page = ctx.Web.LoadClientSidePage("csp-test-author-byline.aspx");
+                Assert.IsTrue(page.PageHeader.ShowTopicHeader);
+                Assert.AreEqual("Topic Header Text", page.PageHeader.TopicHeader);
+            }
+        }
+
     }
 }
 #endif

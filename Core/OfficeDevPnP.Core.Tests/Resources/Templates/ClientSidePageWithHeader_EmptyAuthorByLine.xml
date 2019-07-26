@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<pnp:Provisioning xmlns:pnp="http://schemas.dev.office.com/PnP/2019/03/ProvisioningSchema">
+  <pnp:Preferences Generator="OfficeDevPnP.Core, Version=3.11.1907.0, Culture=neutral, PublicKeyToken=c742ba29399ff639" />
+  <pnp:Templates ID="CONTAINER-TEMPLATE-09C0D16B3FF6469AA46E90AD5C44FC14">
+    <pnp:ProvisioningTemplate ID="TEMPLATE-09C0D16B3FF6469AA46E90AD5C44FC14" Version="1" BaseSiteTemplate="SITEPAGEPUBLISHING#0" Scope="RootSite">
+      <pnp:ClientSidePages>
+        <pnp:ClientSidePage PageName="csp-test-author-byline.aspx" PromoteAsNewsArticle="false" PromoteAsTemplate="false" Overwrite="true" Layout="Home" EnableComments="false" Title="Homepage">
+          <pnp:Header Type="Custom" ServerRelativeImageUrl="{site}/SiteAssets/Kunden-News/Aktuelles-1.png" TranslateX="50.6043089858119" TranslateY="39.6428571428571" LayoutType="CutInShape" TextAlignment="Center" ShowTopicHeader="true" ShowPublishDate="false" TopicHeader="Topic Header Text" AlternativeText="" Authors="[]" AuthorByLine="[]" AuthorByLineId="-1" />
+        </pnp:ClientSidePage>
+      </pnp:ClientSidePages>
+    </pnp:ProvisioningTemplate>
+  </pnp:Templates>
+</pnp:Provisioning>

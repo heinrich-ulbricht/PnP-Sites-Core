@@ -422,14 +422,17 @@ namespace OfficeDevPnP.Core.Pages
                 int userId = -1;
                 try
                 {
-                    var user = this.clientContext.Web.EnsureUser(data.Replace("\"", "").Split(new string[] { "|" }, StringSplitOptions.RemoveEmptyEntries)[2]);
-                    this.clientContext.Load(user);
-                    this.clientContext.ExecuteQueryRetry();
-                    userId = user.Id;
+                    var userParts = data.Replace("\"", "").Split(new string[] { "|" }, StringSplitOptions.RemoveEmptyEntries);
+                    if (userParts.Length > 2)
+                    {
+                        var user = this.clientContext.Web.EnsureUser(userParts[2]);
+                        this.clientContext.Load(user);
+                        this.clientContext.ExecuteQueryRetry();
+                        userId = user.Id;
+                    }
                 }
                 catch (Exception ex)
                 {
-
                 }
 
                 this.AuthorByLineId = userId;

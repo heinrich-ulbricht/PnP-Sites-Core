@@ -88,6 +88,12 @@
     <ErrorReport>prompt</ErrorReport>
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
+  <PropertyGroup>
+    <SignAssembly>true</SignAssembly>
+  </PropertyGroup>
+  <PropertyGroup>
+    <AssemblyOriginatorKeyFile>dummy.snk</AssemblyOriginatorKeyFile>
+  </PropertyGroup>
   <Choose>
     <When Condition=" '$(Configuration)' == 'debug' Or '$(Configuration)' == 'release' ">
       <ItemGroup>
@@ -557,6 +563,7 @@
       <SubType>Designer</SubType>
     </None>
     <None Include="App.config.sample" />
+    <None Include="dummy.snk" />
     <None Include="Framework\Functional\Templates\ct3document.docx" />
     <None Include="Framework\Functional\Templates\ct1document.docx" />
     <None Include="Framework\Functional\Templates\CT21Document.docx" />
@@ -754,6 +761,9 @@
     <None Include="Resources\Templates\TestTemplateOriginal2.pnp" />
     <None Include="Resources\TestSolution.wsp" />
     <Content Include="Resources\Templates\ClientSidePagesWithHeader.xml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="Resources\Templates\ClientSidePageWithHeader_EmptyAuthorByLine.xml">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <Content Include="Resources\Templates\MeetingsTemplate.xml" />
